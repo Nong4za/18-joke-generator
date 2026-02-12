@@ -1,56 +1,38 @@
 pipeline {
     agent any
-
+    
     environment {
-        VERCEL_TOKEN = credentials('DevOps18-quiz1')
-        VERCEL_PROJECT_NAME = 'devops18quiz1'
-    }
-
-    tools {
-        nodejs 'NodeJS' 
+        VERCEL_PROJECT_ID = 'devopa18-quiz1'
+        VERCEL_TOKEN = credentials('DevOps18-quiz1') 
     }
 
     stages {
-        stage('Checkout') {
+        stage('Test npm') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Check Node & npm') {
-            steps {
-                sh '''
-                    node --version
-                    npm --version
-                '''
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
+                echo 'Installing and Testing...'
                 sh 'npm install'
             }
         }
 
-        stage('Deploy to Vercel') {
+        stage('Build') {
             steps {
-                sh '''
-                    npx vercel deploy \
-                        --prod \
-                        --yes \
-                        --name $VERCEL_PROJECT_NAME \
-                        --token $VERCEL_TOKEN
-                '''
+                echo 'Building Project...'
+                sh 'npm run build'
             }
         }
-    }
 
-    post {
-        success {
-            echo '✅ Deploy to Vercel SUCCESS'
+        stage('Test Build') {
+            steps {
+                echo 'Checking Build Output...'
+                sh 'ls -al' 
+            }
         }
-        failure {
-            echo '❌ Deploy FAILED'
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying to Vercel...'
+                sh "npx vercel --token ${VERCEL_TOKEN} --prod --yes"
+            }
         }
     }
 }
