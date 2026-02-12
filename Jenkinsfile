@@ -1,37 +1,56 @@
 pipeline {
-
     agent any
 
     environment {
-        VERCEL_PROJECT_NAME = 'devops18-quiz1' // เปลี่ยนเป็น Project Name ของคุณ
-        VERCEL_TOKEN = credentials('DevOps18-vercel-token') // ดึงจาก Jenkins Credentials ที่ชื่อ vercel-token
+        VERCEL_TOKEN = credentials('DevOps18-vercel-token')
+        VERCEL_PROJECT_NAME = 'devops18-quiz1'
+    }
+
+    tools {
+        nodejs 'NodeJS' 
     }
 
     stages {
-
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                sh 'npm ci'
-                sh 'npm run build'
+                checkout scm
             }
         }
 
-        stage('Test') {
+        stage('Check Node & npm') {
             steps {
-                sh 'npm test'
+                sh '''
+                    node --version
+                    npm --version
+                '''
             }
         }
 
-        stage('Deploy') {
+        stage('Install Dependencies') {
             steps {
-                // ติดตั้ง Vercel CLI 
-                sh 'npm install vercel'
-
-                // สั่ง Deploy ไปยัง Vercel 
-                // ใช้ --prebuilt เพื่อระบุว่าไฟล์ในโฟลเดอร์ build/ ได้ถูกสร้างไว้แล้ว
-                sh './node_modules/.bin/vercel deploy --prod --prebuilt'
+                sh 'npm install'
             }
         }
 
+        stage('Deploy to Vercel') {
+            steps {
+                sh '''
+                    npx vercel deploy \
+                        --prod \
+                        --yes \
+                        --name $VERCEL_PROJECT_NAME \
+                        --token $VERCEL_TOKEN
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deploy to Vercel SUCCESS'
+        }
+        failure {
+            echo '❌ Deploy FAILED'
+        }
     }
 }
